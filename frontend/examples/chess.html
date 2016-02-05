@@ -1,0 +1,248 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <link rel="stylesheet" href="example.css">
+  <link rel="stylesheet" href="../assets/base.css">
+  <link rel="stylesheet" href="../assets/theme.css">
+  <link rel="stylesheet" href="../assets/desktop.css">
+</head>
+<body>
+<script src="../chessground.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+<!-- chess.js is NOT required by chessground. We include it for the examples. -->
+<script src="chess.min.js"></script>
+<script>
+  function chessToDests(chess) {
+    var dests = {};
+    chess.SQUARES.forEach(function(s) {
+      var ms = chess.moves({square: s, verbose: true});
+      if (ms.length) dests[s] = ms.map(function(m) { return m.to; });
+    });
+    return dests;
+  }
+  function chessToColor(chess) {
+    return (chess.turn() == "w") ? "white" : "black";
+  }
+</script>
+<section>
+  <div class="chessground small blue cburnett" id="ground7"></div>
+  <p>Play a game on a single board</p>
+  <script>
+    (function() {
+      var ground;
+      var chess = new Chess();
+      var isGameOver = function(chess) {
+        return chess.in_checkmate() || chess.in_stalemate() || chess.in_draw();
+      };
+
+      ground = Chessground(document.getElementById('ground7'), {
+        viewOnly: false,
+        turnColor: 'white',
+        animation: {
+          duration: 500
+        },
+        drawable: {
+          enabled: true
+        }
+      });
+      window.ground = ground; window.chess = chess;
+
+      var HumanStrategy = function(ground, chess) {
+        var opponent = null;
+        return {
+          setOpponent: function(opponentStrategy) {
+            opponent = opponentStrategy;
+          },
+          play: function() {
+            //console.log('testing');
+            if (chess.game_over()) return;
+
+            ground.set({
+              fen: chess.fen(),
+              turnColor: chessToColor(chess),
+              movable: {
+                free: false,
+                color: chessToColor(chess),
+                premove: true,
+                dests: chessToDests(chess),
+                events: {
+                  after: this.onMove
+                }
+              }
+            });
+          },
+          onMove: function(orig, dest) {
+            // promotion to a queue
+            var move = chess.move({from: orig, to: dest, promotion: 'q'});
+            // check if this is a valid move
+            if (move !== null) {
+              opponent.play();
+            }
+          }
+        }
+      };
+
+      // just a skeleton code
+      var MachineStrategy = function(ground, chess) {
+        var opponent = null;
+        return {
+          // other machine strategy would override this method
+          makeMove: function(ground, chess) {
+            //a simple implementation for Machine
+            // return makeRandomMove(chess);
+          },
+          setOpponent: function(opponentStrategy) {
+            opponent = opponentStrategy;
+          },
+          play: function() {
+            if (chess.game_over()) return;
+            ground.set({
+              turnColor: chessToColor(chess),
+              fen: chess.fen(),
+              movable: {
+                free: false,
+                color: chessToColor(chess)
+              }
+            });
+            setTimeout(function() {
+              var move = this.makeMove(chess);
+              chess.move(move);
+              opponent.play();
+            }.bind(this), 500);
+
+          }
+        }
+      };
+
+      // an example to extends from MachineStrategy
+      var RandomMachineStrategy = function(ground, chess) {
+        var makeRandomMove = function(chess) {
+          var validMoves = chessToDests(chess);
+          var randomMove = randomObject(validMoves);
+          var values = randomMove.value;
+          var value = values[ values.length * Math.random() << 0];
+          return {from: randomMove.key, to: value, promotion: 'q'};
+        };
+        var randomObject = function (obj) {
+          var keys = Object.keys(obj);
+          var randomKey = keys[ keys.length * Math.random() << 0];
+          return {
+            key: randomKey,
+            value: obj[randomKey]
+          };
+        };
+
+        return _.extend(MachineStrategy.call(this, ground, chess), {
+          makeMove: function(chess) {
+            return makeRandomMove(chess);
+          }
+        });
+      };
+
+      var MiniMaxStrategy = function(ground, chess) {
+        return _.extend(MachineStrategy.call(this, ground, chess), {
+          makeMove: function(chess) {
+            var miniMaxValue = miniMax(chess, 3, -Number.MAX_VALUE, Number.MAX_VALUE);
+            // console.log(miniMaxValue);
+            return miniMaxValue.bestMove;
+          }
+        });
+      };
+      var simpleEval = function(chess) {
+        var value, piece;
+        value = 0;
+        var counts = {
+          k: 0,
+          q: 0,
+          r: 0,
+          b: 0,
+          n: 0,
+          p: 0
+        };
+        chess.SQUARES.forEach(function(s) {
+          var ms = chess.get(s);
+          if (ms) {
+            counts[ms.type] += ((ms.color === 'w') ? 1 : -1);
+          }
+        });
+//         console.log(counts);
+
+        for (piece in counts) {
+          if (piece === 'k') value += 200 * counts[piece];
+          if (piece === 'q') value += 9 * counts[piece];
+          if (piece === 'r') value += 5 * counts[piece];
+          if (piece === 'n' || piece === 'b') value += 3 * counts[piece];
+          if (piece === 'p') value += counts[piece];
+        }
+
+        // TODO: find doubled, blocked, or isolated
+
+        return value * (chess.turn() == 'w' ? 1 : -1);
+      };
+      var miniMax = function(chess, depth, alpha, beta) {
+        var bestMove, validMoves, index, miniMaxValue;
+        if (depth == 0 || chess.in_checkmate() || chess.in_stalemate()) {
+          return {bestScore: simpleEval(chess), bestMove: null};
+        }
+
+        if (chess.turn() === 'w') {
+          bestMove = null;
+          validMoves = chess.moves({verbose: true});
+          for (index in validMoves) {
+            chess.move(validMoves[index]);
+            miniMaxValue = miniMax(chess, depth - 1, alpha, beta);
+            chess.undo();
+            if (miniMaxValue.bestScore > alpha) {
+              alpha = miniMaxValue.bestScore;
+              bestMove = validMoves[index];
+              if (alpha >= beta) break;
+            }
+          }
+          return {bestScore: alpha, bestMove: bestMove}
+        } else {
+          bestMove = null;
+          validMoves = chess.moves({verbose: true});
+          for (index in validMoves) {
+            chess.move(validMoves[index]);
+            // console.log(chess.ascii());
+            miniMaxValue = miniMax(chess, depth - 1, alpha, beta);
+            chess.undo();
+            if (miniMaxValue.bestScore < beta) {
+              beta = miniMaxValue.bestScore;
+              bestMove = validMoves[index];
+//              console.log(beta);
+//              console.log(bestMove);
+              if (alpha >= beta) break;
+            }
+          }
+          return {bestScore: beta, bestMove: bestMove}
+        }
+      };
+      window.miniMax = miniMax;
+      window.simpleEval = simpleEval;
+
+      var Game = function(ground, chess, FirstStrategyClass, SecondStrategyClass) {
+        return {
+          start: function() {
+            var firstStrategy = new FirstStrategyClass(ground, chess);
+            var secondStrategy = new SecondStrategyClass(ground, chess);
+
+            firstStrategy.setOpponent(secondStrategy);
+            secondStrategy.setOpponent(firstStrategy);
+
+            firstStrategy.play();
+          },
+          stop: function() {}
+        }
+      };
+
+      // var game = new Game(ground, chess, new HumanStrategy(ground, chess), new RandomStrategy(ground, chess));
+      var game = new Game(ground, chess, HumanStrategy, MiniMaxStrategy);
+      game.start();
+
+    })();
+  </script>
+</section>
+</body>
+</html>
+
