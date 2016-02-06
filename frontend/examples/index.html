@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="../assets/base.css">
     <link rel="stylesheet" href="../assets/theme.css">
     <link rel="stylesheet" href="../assets/desktop.css">
+    <script type="text/javascript" src="../rahim.js"></script>
   </head>
   <body>
     <script src="../chessground.js"></script>
@@ -89,16 +90,7 @@
         <div class="chessground small blue cburnett" id="ground7"></div>
         <p>Play a game on a single board</p>
         <script>
-            (function() {
-          var randomObject = function (obj) {
-            var keys = Object.keys(obj);
-            var randomKey = keys[ keys.length * Math.random() << 0];
-            return {
-              key: randomKey,
-              value: obj[randomKey]
-            };
-          };
-
+        (function() {
           var ground;
           var chess = new Chess();
           var onMove = function(orig, dest) {
@@ -111,28 +103,6 @@
               }
             });
             console.log(ground.getFen());
-            if (chess.turn() == 'b') {
-              var validMoves = chessToDests(chess);
-              var randomMove = randomObject(validMoves);
-              chess.move({from: randomMove.key, to: randomMove.value[0]});
-              ground.set({
-                viewOnly: false,
-                turnColor: chessToColor(chess),
-                fen: chess.fen(),
-                movable: {
-                  free: false,
-                  color: chessToColor(chess),
-                  premove: true,
-                  dests: chessToDests(chess),
-                  events: {
-                    after: onMove
-                  }
-                },
-                drawable: {
-                  enabled: true
-                }
-              });
-            }
           };
           ground = Chessground(document.getElementById('ground7'), {
             viewOnly: false,
@@ -154,6 +124,9 @@
             }
           });
           window.ground = ground; window.chess = chess;
+
+          movePiece("e2", "e4");
+          setTimeout(reverseMove,1000);
         })();
         </script>
     </section>

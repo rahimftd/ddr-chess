@@ -1784,6 +1784,9 @@ module.exports = function(controller) {
     getOrientation: function () {
       return controller.data.orientation;
     },
+    getController: function () {
+    	return controller.data;
+    },
     getPieces: function() {
       return controller.data.pieces;
     },
@@ -2341,7 +2344,7 @@ module.exports = function(cfg) {
     renderRAF: null, // function that rerenders the board using requestAnimationFrame
     element: null, // DOM element of the board, required for drag piece centering
     bounds: null, // function that calculates the board bounds
-    autoCastle: false, // immediately complete the castle by moving the rook after king move
+    autoCastle: true, // immediately complete the castle by moving the rook after king move
     viewOnly: false, // don't bind events: the user will never be able to move pieces around
     minimalDom: false, // don't use square elements. Optimization to use only with viewOnly
     disableContextMenu: false, // because who needs a context menu on a chessboard
