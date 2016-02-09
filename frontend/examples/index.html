@@ -125,8 +125,12 @@
           });
           window.ground = ground; window.chess = chess;
 
-          movePiece("e2", "e4");
-          setTimeout(reverseMove,1000);
+          setTimeout(function() {
+            if (getTurnColor() === "black") {
+              movePiece(findBestMove(1, "min").from, findBestMove(1, "min").to);
+              console.log("moving");
+            }
+          }, 5000);
         })();
         </script>
     </section>
