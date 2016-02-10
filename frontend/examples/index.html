@@ -125,12 +125,16 @@
           });
           window.ground = ground; window.chess = chess;
 
-          setTimeout(function() {
-            if (getTurnColor() === "black") {
-              movePiece(findBestMove(1, "min").from, findBestMove(1, "min").to);
-              console.log("moving");
+          setInterval(function() {
+            if (getController().turnColor === "white") {
+              var best = max(2, true);
+            } else {
+              var best = min(2, true);
             }
-          }, 5000);
+            movePiece(best.from, best.to);
+
+          }, 500)
+
         })();
         </script>
     </section>
