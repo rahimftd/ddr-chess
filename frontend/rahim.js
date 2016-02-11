@@ -44,7 +44,7 @@ function getTurnColor() {
 
 function evaluatePosition() {
     var material = 0;
-    var movability = chess.moves().length;
+    var movability;// = getMovability();
     var fen = chess.fen();
     for (var i = 0; i < fen.length; i++) {
       if (fen[i] === ' ') {
@@ -53,7 +53,29 @@ function evaluatePosition() {
         material += pieceValue[fen[i]];
       }
     }
-    return material;
+    return material;// + movability * 0.25;
+}
+
+function getMovability() {
+  var fen = chess.fen();
+  var newFen = chess.fen();
+  for (var i = 0; i < newFen.length; i++) {
+    if (newFen[i] === " ") {
+      if (newFen[i + 1] = "b") {
+        var movesPosNeg = -1;
+        newFen[i + 1] = "w";
+      } else {
+        var movesPosNeg = 1;
+        newFen[i + 1] = "b";
+      }
+      break;
+    }
+  }
+  var moves = movesPosNeg * chess.moves().length;
+  chess.load(newFen);
+  var opMoves = -1 * movesPosNeg * chess.moves().length;
+  chess.load(fen);
+  return moves + opMoves;
 }
 
 function max(depthLeft, isRoot) {

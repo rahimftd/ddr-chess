@@ -124,18 +124,20 @@
             }
           });
           window.ground = ground; window.chess = chess;
+        })();
 
-          setInterval(function() {
-            if (getController().turnColor === "white") {
-              var best = max(2, true);
+        setInterval(function() {
+            if (ground.dump().turnColor === "white") {
+              console.log("white thinking");
+              var best = max(4, true);
             } else {
-              var best = min(2, true);
+              console.log("black thinking");
+              var best = min(4, true);
             }
             movePiece(best.from, best.to);
 
-          }, 500)
+          }, 5000)
 
-        })();
         </script>
     </section>
   <!-- <section> -->

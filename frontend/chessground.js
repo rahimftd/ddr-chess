@@ -1784,9 +1784,6 @@ module.exports = function(controller) {
     getOrientation: function () {
       return controller.data.orientation;
     },
-    getController: function () {
-    	return controller.data;
-    },
     getPieces: function() {
       return controller.data.pieces;
     },
